@@ -2,13 +2,13 @@ import os
 import csv
 import json
 import logging
-import sys
 from io import StringIO
 from mcp.server.fastmcp import FastMCP, Context
 import httpx
 from dotenv import load_dotenv
 import asyncio
 import mcp.types as types # Import MCP types
+import sys 
 
 # Load environment variables from .env for local execution or secrets
 # Variables set in Claude config 'env' block might override these when run by the client
@@ -92,8 +92,8 @@ async def process_and_send_csv(file_path: str) -> str:
     json_data = await convert_csv_to_json(file_path)
 
     if isinstance(json_data, list) and len(json_data) > 0 and "error" in json_data[0]:
-         logging.error(f"CSV conversion failed for {file_path}: {json_data[0]['error']}")
-         return f"Error processing CSV: {json_data[0]['error']}"
+       logging.error(f"CSV conversion failed for {file_path}: {json_data[0]['error']}")
+       return f"Error processing CSV: {json_data[0]['error']}"
 
     json_content_string = json.dumps(json_data, ensure_ascii=False)
 
@@ -175,11 +175,11 @@ async def call_grok_via_datasaur(prompt: str) -> str:
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
              # --- Use specific Grok URL ---
-            response = await client.post(DATASAUR_GROK_API_URL, headers=headers, json=payload)
-            # --- End Use ---
-            response.raise_for_status()
-            response_json = response.json()
-            logging.debug(f"Received response from Datasaur Grok API: {response_json}")
+             response = await client.post(DATASAUR_GROK_API_URL, headers=headers, json=payload)
+             # --- End Use ---
+             response.raise_for_status()
+             response_json = response.json()
+             logging.debug(f"Received response from Datasaur Grok API: {response_json}")
 
     except httpx.RequestError as e:
         logging.error(f"Datasaur Grok API request failed: {e}")
@@ -204,18 +204,28 @@ async def call_grok_via_datasaur(prompt: str) -> str:
         return "Error: Received unexpected response format from Grok API (missing choices)."
 
 if __name__ == "__main__":
-    # ... (startup checks for API keys/URLs) ...
+    # Optional: Add startup checks for API keys/URLs if needed for standalone running
+    # if not DATASAUR_API_KEY:
+    #    logging.critical("DATASAUR_API_KEY is not set. Exiting.")
+    #    sys.exit(1) # Use sys.exit here
+    # Add similar checks for URLs if they are absolutely critical at startup
 
     transport_type = os.getenv("TRANSPORT", "stdio")
 
     if transport_type == 'stdio':
         logging.info("Starting MCP server in STDIO mode...")
-        # Call mcp.run() directly. It manages the event loop.
-        mcp.run(transport='stdio')
-        logging.info("MCP server finished in STDIO mode.")
-        # Add the exit logging here if you're still debugging the restarting issue
-        logging.critical("MCP server process __main__ block is ending.")
-        print("MCP server process __main__ block is ending.", file=sys.stderr) # Don't forget 'import sys' at top
+        try:
+            # Call mcp.run() directly. It manages the event loop.
+            mcp.run(transport='stdio')
+            logging.info("MCP server finished in STDIO mode.")
+        except Exception as e:
+            logging.exception("MCP server encountered an unhandled exception during run.") # Log the full exception
+        finally:
+            # This block will execute even if mcp.run() exits unexpectedly
+            logging.critical("MCP server process __main__ block is ending.")
+            # Using sys.stderr requires sys to be imported
+            print("MCP server process __main__ block is ending.", file=sys.stderr)
     else:
         # ... (handle other transports or errors) ...
-        pass # Add appropriate logic or exit
+        logging.error(f"Unsupported transport type: {transport_type}")
+        sys.exit(1) # Exit if transport is unsupported
