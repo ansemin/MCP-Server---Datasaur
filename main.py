@@ -2,6 +2,7 @@ import os
 import csv
 import json
 import logging
+import sys
 from io import StringIO
 from mcp.server.fastmcp import FastMCP, Context
 import httpx
@@ -146,13 +147,7 @@ async def process_and_send_csv(file_path: str) -> str:
         return "Error: Received unexpected response format from CSV API (missing choices)."
 
 
-@mcp.tool(
-    annotations={
-        "title": "Call Grok Uncensored",
-        "readOnlyHint": True,
-        "openWorldHint": True
-    }
-)
+@mcp.tool()
 async def call_grok_via_datasaur(prompt: str) -> str:
     """
     Sends a given prompt string to the 'grok uncensored' model via the specific Datasaur Grok API sandbox and returns the model's response.
@@ -208,30 +203,19 @@ async def call_grok_via_datasaur(prompt: str) -> str:
         logging.warning(f"'choices' key missing or empty in Datasaur Grok API response: {response_json}")
         return "Error: Received unexpected response format from Grok API (missing choices)."
 
-
-async def main():
-    # Check essential configurations at startup
-    if not DATASAUR_API_KEY:
-         logging.critical("FATAL: DATASAUR_API_KEY is not set. Server cannot function.")
-         return # Exit if key is missing
-
-    # Check if at least one URL is configured, otherwise the server is useless
-    if not DATASAUR_CSV_API_URL and not DATASAUR_GROK_API_URL:
-         logging.critical("FATAL: Neither DATASAUR_CSV_API_URL nor DATASAUR_GROK_API_URL is set. Server cannot function.")
-         return
-
-    transport = os.getenv("TRANSPORT", "stdio") # Default to stdio if not set
-    if transport == 'sse':
-        logging.warning("SSE transport selected but requires specific setup with a web framework (e.g., Starlette) and MCP SSE transport classes. Running in STDIO mode instead.")
-        await mcp.run(transport='stdio')
-    elif transport == 'stdio':
-        logging.info("Starting MCP server in STDIO mode...")
-        await mcp.run(transport='stdio')
-        logging.info("MCP server finished in STDIO mode.")
-    else:
-        logging.error(f"Invalid TRANSPORT setting: '{transport}'. Use 'stdio' or 'sse'. Defaulting to 'stdio'.")
-        await mcp.run(transport='stdio')
-
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    # ... (startup checks for API keys/URLs) ...
+
+    transport_type = os.getenv("TRANSPORT", "stdio")
+
+    if transport_type == 'stdio':
+        logging.info("Starting MCP server in STDIO mode...")
+        # Call mcp.run() directly. It manages the event loop.
+        mcp.run(transport='stdio')
+        logging.info("MCP server finished in STDIO mode.")
+        # Add the exit logging here if you're still debugging the restarting issue
+        logging.critical("MCP server process __main__ block is ending.")
+        print("MCP server process __main__ block is ending.", file=sys.stderr) # Don't forget 'import sys' at top
+    else:
+        # ... (handle other transports or errors) ...
+        pass # Add appropriate logic or exit

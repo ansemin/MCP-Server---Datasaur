@@ -1,3 +1,5 @@
 main_backup.py
 mcp-llmtxt.md 
 .env
+venv/
+__pycache__/
