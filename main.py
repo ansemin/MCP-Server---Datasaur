@@ -22,7 +22,7 @@ DATASAUR_API_KEY = os.getenv("DATASAUR_API_KEY")
 DATASAUR_CSV_API_URL = os.getenv("DATASAUR_CSV_API_URL")
 
 # Specific URL for the Grok sandbox
-DATASAUR_GROK_API_URL = os.getenv("DATASAUR_GROK_API_URL")
+DATASAUR_GROK_UNCENSORED_API_URL = os.getenv("DATASAUR_GROK_UNCENSORED_API_URL")
 # --- End Configuration Loading ---
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
@@ -148,7 +148,7 @@ async def process_and_send_csv(file_path: str) -> str:
 
 
 @mcp.tool()
-async def call_grok_via_datasaur(prompt: str) -> str:
+async def call_grok_uncensored(prompt: str) -> str:
     """
     Sends a given prompt string to the 'grok uncensored' model via the specific Datasaur Grok API sandbox and returns the model's response.
     Use this for general queries or instructions intended for an uncensored LLM.
@@ -159,7 +159,7 @@ async def call_grok_via_datasaur(prompt: str) -> str:
     logging.debug(f"Received Grok prompt: {prompt[:100]}...")
 
     # --- Use specific Grok URL and check credentials ---
-    if not DATASAUR_GROK_API_URL or not DATASAUR_API_KEY:
+    if not DATASAUR_GROK_UNCENSORED_API_URL or not DATASAUR_API_KEY:
         logging.error("DATASAUR_GROK_API_URL or DATASAUR_API_KEY not configured.")
         return "Error: Datasaur Grok API configuration missing on server."
     # --- End Check ---
@@ -170,12 +170,12 @@ async def call_grok_via_datasaur(prompt: str) -> str:
     }
     payload = { "messages": [ {"role": "user", "content": prompt} ] }
 
-    logging.debug(f"Sending prompt to Datasaur Grok API: {DATASAUR_GROK_API_URL}")
+    logging.debug(f"Sending prompt to Datasaur Grok API: {DATASAUR_GROK_UNCENSORED_API_URL}")
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
              # --- Use specific Grok URL ---
-             response = await client.post(DATASAUR_GROK_API_URL, headers=headers, json=payload)
+             response = await client.post(DATASAUR_GROK_UNCENSORED_API_URL, headers=headers, json=payload)
              # --- End Use ---
              response.raise_for_status()
              response_json = response.json()

@@ -3,3 +3,5 @@ mcp-llmtxt.md
 .env
 venv/
 __pycache__/
+claude_desktop_config.json
+
